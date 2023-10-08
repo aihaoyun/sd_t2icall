@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sd_api调用</title>
+</head>
+
+<body>
+    <style>
+        :root {
+            --backgroung_color: rgb(13, 17, 23);
+            --fontColor: white
+        }
+
+        .textarea_c {
+            font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+        }
+
+        * {
+            background-color: var(--backgroung_color);
+            color: var(--fontColor);
+        }
+
+        #generate_button {
+            padding: 15px 42px;
+            background-color: blueviolet;
+            border-radius: 8px;
+            display: inline-block;
+            cursor: pointer;
+        }
+    </style>
+    <div style="display: flex;">
+        <span style="width: 14%;">后端requests请求URL:</span><input type="text" value="http://127.0.0.1:7860/"
+            style="width: 86%;" id="tgt_url" />
+    </div>
+    <div id="txt2img" style="margin-bottom: 20px; margin-top: 20px;">
+        <textarea style="width: 100%;" rows="8" placeholder="正面prompt" id="p_prompt"
+            class="textarea_c">masterpiece, best quality, </textarea>
+        <textarea style="width: 100%;" rows="8" placeholder="负面prompt" id="n_prompt"
+            class="textarea_c">EasyNegative, </textarea>
+   <div> <span>宽 度: </span><input type="number" min="8" value="512" placeholder="width" id="width"></div>
+   <div><span>高  度: </span><input type="number" min="8" value="768" placeholder="height" id="height"></div>
+   <div><span>相关性: </span><input type="number" min="1" value="8" placeholder="提示词相关性(cfg_scale)" id="cfg_scale"></div>
+   <div><span>步  数: </span><input type="number" min="1" value="50" placeholder="steps" id="steps"></div>
+   <div><span>种  子: </span><input type="number" value="-1" min="-1" placeholder="seed" id="seed" /></div>
+    </div>
+    <div style="margin-bottom: 20px;">
+        <input type="file" style="display:none;" id="selectPic" accept="image/*" />
+        <span style="margin-right: 12px;">采样 方法: <select id="sampler_index">
+                <option>Euler</option>
+                <option>Euler a</option>
+                <option>DPM++ 2M</option>
+                <option selected>DPM++ 2M Karras</option>
+                <option>DPM++ 2M SDE</option>
+                <option>DPM++ 2M SDE Karras</option>
+                <option>DPM++ 2M SDE Exponential</option>
+                <option>DPM++ 2M SDE Heun</option>
+                <option>DPM++ 2M SDE Heun Karras</option>
+                <option>DPM++ 2M SDE Heun Exponential</option>
+                <option>DPM++ 3M SDE</option>
+                <option>DPM++ 3M SDE Karras</option>
+                <option>DPM++ 3M SDE Exponential</option>
+                <option>DPM++ SDE Karras</option>
+                <option>Restart</option>
+            </select></span></div>
+<!-- <div><span onclick="RefreshVAE()" style="cursor: pointer;">VAE:</span><select id="VAE"> </select></div> -->
+ <div style="margin-bottom: 20px;">
+        <span style="margin-right: 12px;">加载VAE:  <select id="VAE">
+                <option>kl-f8-anime2.ckpt</option>
+                <option selected>vae-ft-mse-840000-ema-pruned.ckpt</option>
+                
+           </select></span></div>
+
+ <button onclick="selectPic()">选择放大的图</button>
+        <button onclick="cancelImg()" style="display:none;" id="cancelImg_button">取消</button>
+    </div>
+    <div>
+        <button onclick="hr_pic()" id="hr_button" style="margin-right: 20px;">高清修复(关)</button>
+  <div>      <span>放大倍数: </span><input type="number" min="1" step="0.1" value="2" id="magnification" /></div>
+  <div>      <span>重回幅度: </span> <input type="number" min="0.01" step="0.01" value="0.6" id="denoising_strength" /></div>
+<div>  <!--     <span>放大算法:  <select id="hr_upscaler"> </select></span></div>-->
+</div> 
+
+<div style="margin-bottom: 20px;">
+        <span style="margin-right: 12px;">放大算法:  <select id="hr_upscaler">
+                <option>4x-UltraSharp</option>
+                <option selected>R-ESRGAN 4x+</option>
+                
+           </select></span></div>
+<br>
+    <div style="position:relative;top:10px;text-align: center;">
+        <button onclick="generate()" id="generate_button">生成</button>
+    </div>
+    <div class="imgBox" id="show_img"></div>
+    <script>
+        let count = 0;
+        function downloadImage(event) {
+            count += 1;
+            setTimeout(() => {
+                if (count === 1) {
+                    const that = event.target;
+                    image.style.transform = "scale(1)";
+                    imgShow(that);
+                    window.addEventListener("wheel", handleStopWheel, {
+                        passive: false,
+                    });
+                    imgDrag();
+                    count = 0;
+                }
+                else if (count === 2) {
+                    const img = event.target;
+                    const a = document.createElement("a");
+                    a.href = img.src;
+                    a.download = Date.now() + ".png";
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    count = 0;
+                }
+            }, 200);
+        }
+
+        function RefreshVAE() {
+ //      easyGetOptions("sdapi/v1/sd-vae", "VAE");      
+        }
+
+        function getWH(base64) {
+            var img = new Image();
+            img.src = base64;
+            img.onload = function () {
+                img.addEventListener("click", downloadImage);
+                document.getElementById("width").value = img.width;
+                document.getElementById("height").value = img.height;
+                img.style.maxWidth = "300px";
+                document.getElementById("show_img").insertBefore(img, document.getElementById("show_img").firstChild);
+            }
+        }
+
+        function cancelImg() {
+            img_base64 = 0;
+            document.getElementById("width").value = 512;
+            document.getElementById("height").value = 768;
+            document.getElementById("cancelImg_button").style.display = "none";
+        }
+
+        let img_base64;
+
+        function selectPic() {
+            const selectPic = document.getElementById("selectPic");
+            selectPic.click();
+            selectPic.onchange = function (evt) {
+                if (evt.target.files.length != 0) {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(evt.target.files[0]);
+                    reader.onload = function () {
+                        img_base64 = this.result;
+                        getWH(img_base64);
+                        document.getElementById("cancelImg_button").style.display = "inline";
+                    }
+                }
+            }
+        }
+     
+    //   easyGetOptions("sdapi/v1/upscalers", "hr_upscaler");
+     //  easyGetOptions("sdapi/v1/sd-vae", "VAE");
+         function easyGetOptions(tSrc, select_id) {
+            const xhr = new XMLHttpRequest();
+            xhr.open("get", "/t2icall/api/easyGetOptions", true)
+            xhr.setRequestHeader("tgt_url", document.getElementById("tgt_url").value + tSrc);
+            xhr.onload = function () {
+                const select = document.getElementById(select_id);
+                select.innerHTML = "";
+                const results = this.responseText.replaceAll('"', '').split(',')
+                for (result in results) {
+                    let result_option = document.createElement("option");
+                    result_option.innerText = results[result];
+                    select.appendChild(result_option, select.firstChild);
+                }
+            }
+            xhr.send();
+        }
+        let is_hr = false;
+        function hr_pic() {
+            const hr_button = document.getElementById("hr_button");
+            if (hr_button.innerText === "高清修复(关)") {
+                hr_button.innerText = "高清修复(开)";
+                is_hr = true;
+            } else {
+                hr_button.innerText = "高清修复(关)";
+                is_hr = false;
+            }
+        }
+        let backgroung_color, fontColor;
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches || window.location['href'].endsWith('__theme=dark')) {
+            backgroung_color = "rgb(13, 17, 23)";
+            fontColor = "white";
+        } else {
+            backgroung_color = "white";
+            fontColor = "black";
+        }
+        const show_img_div = document.getElementById("show_img");
+
+        function generate() {
+            const n_prompt = document.getElementById("n_prompt").value;
+            const p_prompt = document.getElementById("p_prompt").value;
+            const cfg_scale = document.getElementById("cfg_scale").value;
+            const steps = document.getElementById("steps").value;
+            const width = document.getElementById("width").value - document.getElementById("width").value % 8;
+            const height = document.getElementById("height").value - document.getElementById("height").value % 8;
+            const sampler_index = document.getElementById("sampler_index").options[document.getElementById("sampler_index").selectedIndex].text;
+            const sd_vae = document.getElementById("VAE").options[document.getElementById("VAE").selectedIndex].text;
+            let seed = document.getElementById("seed").value;
+            seed = (seed == '0' || seed == '-1') ? seed = Math.random().toString().slice(9) : seed
+            param = {
+                "prompt": p_prompt,
+                "negative_prompt": n_prompt,
+                "seed": seed,
+                "cfg_scale": cfg_scale,
+                "steps": steps,
+                "width": width,
+                "height": height,
+                "sampler_index": sampler_index,
+                "restore_faces": "True"
+            };
+            if (sd_vae !== "default"){
+                param["override_settings"] = {
+                    "sd_vae": sd_vae,
+                }
+            }
+            if (img_base64) {
+                param["init_images"] = [img_base64];
+                param["denoising_strength"] = document.getElementById("denoising_strength").value;
+            }
+            if (is_hr && !img_base64) {
+                param["enable_hr"] = true;
+                param["hr_scale"] = document.getElementById("magnification").value;
+                param["denoising_strength"] = document.getElementById("denoising_strength").value;
+                param["hr_upscaler"] = document.getElementById("hr_upscaler").options[document.getElementById("hr_upscaler").selectedIndex].text;
+            }
+            const xhr = new XMLHttpRequest();
+            const url = '/t2icall/api/generate';
+            xhr.open("post", url, true);
+            xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+            xhr.setRequestHeader("tgt_url", document.getElementById("tgt_url").value);
+            xhr.onload = function () {
+                if (this.status == 200) {
+                    const img = document.createElement("img");
+                    img.style.maxWidth = "300px";
+                    img.src = "data:image/png;base64," + this.responseText.replaceAll('"', '');
+                    img.addEventListener("click", downloadImage);
+                    show_img_div.insertBefore(img, show_img_div.firstChild);
+                } else {
+                    alert("error: " + this.responseText)
+                }
+
+            }
+            xhr.send(JSON.stringify(param));
+
+        };
+    </script>
+
+    <!-- 以下代码来自 https://blog.csdn.net/qq_58441775/article/details/131963598 -->
+    <div id="outerdiv" style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 2;
+        width: 100%;
+        height: 100%;
+        display: none;
+      ">
+        <img id="bigimg" src="" ondblclick="bigimgclick()"/>
+    </div>
+</body>
+<script>
+    function bigimgclick() {
+        outerdiv.style.display = "none";
+        initScale = 1;
+        window.removeEventListener("wheel", handleStopWheel);
+    }
+    /**
+     * 实现图片点击放大、拖拽、滚轴滚动焦点缩放功能，相关参数、函数声明
+     */
+    let imgWidth, imgHeight; // 图片点击放大初始尺寸参数
+    let maxZoom = 4; //最大缩放倍数
+    let minreduce = 0.5; // 最小缩放倍数
+    let initScale = 1; //滚动缩放初始倍数，并不是图片点击放大的倍数
+    let isPointerdown = false; //鼠标按下的标识
+    //记录鼠标按下坐标和按下移动时坐标
+    let lastPointermove = {
+        x: 0,
+        y: 0,
+    };
+    //移动过程从上一个坐标到下一个坐标之间的差值
+    let diff = {
+        x: 0,
+        y: 0,
+    };
+    //图片放大后左上角的坐标，主要结合diff参数用于鼠标焦点缩放时图片偏移坐标
+    let x = 0;
+    let y = 0;
+
+    // 记录节点
+    const outerdiv = document.querySelector("#outerdiv");
+    const image = outerdiv.querySelector("#bigimg");
+    function imgShow(that) {
+        let src = that.getAttribute("src");
+        image.setAttribute("src", src);
+
+        // 设置尺寸和调整比例
+        let windowW = document.documentElement.clientWidth;
+        let windowH = document.documentElement.clientHeight;
+        let realWidth = image.naturalWidth; //获取图片的原始宽度
+        let realHeight = image.naturalHeight; //获取图片的原始高度
+        let outsideScale = 0.8;
+        let belowScale = 1.4;
+        let realRatio = realWidth / realHeight;
+        let windowRatio = windowW / windowH;
+
+        // 说明：下面是我自己的一些判断逻辑，大致意思就是图片的真实尺寸大于屏幕尺寸则使用屏幕尺寸，如果小于屏幕尺寸就使用自己本身的尺寸；并根据大于或者小于的比例对图片的尺寸进一步调整。coder可以根据自己的要求进行修改。
+        if (realRatio >= windowRatio) {
+            if (realWidth > windowW) {
+                imgWidth = windowH * outsideScale;
+                imgHeight = (imgWidth / realWidth) * realHeight;
+            } else {
+                if (realWidth * belowScale < windowW) {
+                    imgWidth = realWidth * (belowScale - 0.2);
+                    imgHeight = (imgWidth / realWidth) * realHeight;
+                } else {
+                    imgWidth = realWidth;
+                    imgHeight = realHeight;
+                }
+            }
+        } else {
+            if (realHeight > windowH) {
+                imgHeight = windowH * outsideScale;
+                imgWidth = (imgHeight / realHeight) * realWidth;
+            } else {
+                if (realHeight * belowScale < windowW) {
+                    imgHeight = realHeight * (belowScale - 0.2);
+                    imgWidth = (imgHeight / realHeight) * realWidth;
+                } else {
+                    imgWidth = realWidth;
+                    imgHeight = realHeight;
+                }
+            }
+        }
+
+        //设置放大图片的尺寸、偏移量并展示
+        image.style.width = imgWidth + "px";
+        image.style.height = imgHeight + "px";
+        x = (windowW - imgWidth) * 0.5;
+        y = (windowH - imgHeight) * 0.5;
+        image.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+        outerdiv.style.display = "block";
+
+        // 点击蒙版及外面区域放大图片关闭
+        outerdiv.onclick = () => {
+            outerdiv.style.display = "none";
+            initScale = 1;
+            window.removeEventListener("wheel", handleStopWheel);
+        };
+
+        // 阻止事件冒泡
+        image.onclick = (e) => {
+            e.stopPropagation();
+        };
+    }
+
+    function handleStopWheel(e) {
+        let itemSizeChange = 1.1; //每一次滚动放大的倍数
+        if (e.target.id == "bigimg") {
+            // 说明：e.dataY如果大于0则表示鼠标向下滚动，反之则向上滚动，这里设计为向上滚动为缩小，向下滚动为放大
+            if (e.deltaY > 0) {
+                itemSizeChange = 1 / 1.1;
+            }
+            let _initScale = initScale * itemSizeChange;
+
+            // 说明：在超过或低于临界值时，虽然让initScale等于maxZoom或minreduce，但是在后续的判断中放大图片的最终倍数并没有达到maxZoom或minreduce，而是跳过。
+            if (_initScale > maxZoom) {
+                initScale = maxZoom;
+            } else if (_initScale < minreduce) {
+                initScale = minreduce;
+            } else {
+                initScale = _initScale;
+            }
+            const origin = {
+                x: (itemSizeChange - 1) * imgWidth * 0.5,
+                y: (itemSizeChange - 1) * imgHeight * 0.5,
+            };
+            // 计算偏移量
+            if (_initScale < maxZoom && _initScale > minreduce) {
+                x -= (itemSizeChange - 1) * (e.clientX - x) - origin.x;
+                y -= (itemSizeChange - 1) * (e.clientY - y) - origin.y;
+                e.target.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${initScale})`;
+            }
+        }
+
+        // 阻止默认事件
+        e.preventDefault();
+    }
+
+    function imgDrag() {
+        // 绑定 鼠标按下事件
+        image.addEventListener("pointerdown", pointerdown);
+        // 绑定 鼠标移动事件
+        image.addEventListener("pointermove", pointermove);
+        image.addEventListener("pointerup", function (e) {
+            if (isPointerdown) {
+                isPointerdown = false;
+            }
+        });
+        image.addEventListener("pointercancel", function (e) {
+            if (isPointerdown) {
+                isPointerdown = false;
+            }
+        });
+    }
+
+    function pointerdown(e) {
+        isPointerdown = true;
+
+        // 说明：Element.setPointerCapture()将特定元素指定为未来指针事件的捕获目标。指针的后续事件将以捕获元素为目标，直到捕获被释放。可以理解为：在窗口不是全屏情况下，我在拖动放大图片时即使鼠标移出可窗口之外，此时事件还是捕获在该放大图片上。
+        image.setPointerCapture(e.pointerId);
+
+        lastPointermove = {
+            x: e.clientX,
+            y: e.clientY,
+        };
+    }
+
+    function pointermove(e) {
+        if (isPointerdown) {
+            const current1 = {
+                x: e.clientX,
+                y: e.clientY,
+            };
+            diff.x = current1.x - lastPointermove.x;
+            diff.y = current1.y - lastPointermove.y;
+            lastPointermove = {
+                x: current1.x,
+                y: current1.y,
+            };
+            x += diff.x;
+            y += diff.y;
+            image.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${initScale})`;
+        }
+        e.preventDefault();
+    }
+</script>
+
+</html>
