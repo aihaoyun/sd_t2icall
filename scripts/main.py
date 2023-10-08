@@ -27,7 +27,7 @@ def on_app_started(_: gr.Blocks, app: FastAPI) -> None:
     #   tgt_url = request.headers.get("tgt_url").strip()
         tgt_url = request.headers.get("tgt_url")
         if tgt_url : # is not None:
-          tgt_url = tgt_url.strip()
+            tgt_url = tgt_url.strip()
     if "init_images" in data:
             response = requests.post(f"{tgt_url}sdapi/v1/img2img",json=data)
         else:
@@ -40,7 +40,7 @@ def on_app_started(_: gr.Blocks, app: FastAPI) -> None:
    #     tgt_url = request.headers.get("tgt_url").strip()
         tgt_url = request.headers.get("tgt_url")
         if tgt_url is not None:
-          tgt_url = tgt_url.strip()
+            tgt_url = tgt_url.strip()
   response = requests.get(tgt_url)
         if response.status_code == 200 and tgt_url.endswith("upscalers"):
             return ",".join([upscaler["name"] for upscaler in response.json() if upscaler["name"] !="None"])
