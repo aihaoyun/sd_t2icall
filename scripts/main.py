@@ -41,7 +41,7 @@ def on_app_started(_: gr.Blocks, app: FastAPI) -> None:
         tgt_url = request.headers.get("tgt_url")
         if tgt_url is not None:
             tgt_url = tgt_url.strip()
-  response = requests.get(tgt_url)
+        response = requests.get(tgt_url)
         if response.status_code == 200 and tgt_url.endswith("upscalers"):
             return ",".join([upscaler["name"] for upscaler in response.json() if upscaler["name"] !="None"])
         elif response.status_code == 200 and tgt_url.endswith("sd-vae"):
