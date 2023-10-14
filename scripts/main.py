@@ -24,10 +24,10 @@ def on_app_started(_: gr.Blocks, app: FastAPI) -> None:
 
     @app.post("/t2icall/api/generate")
     def t2icall(data:dict,request: Request):
-    #   tgt_url = request.headers.get("tgt_url").strip()
-        tgt_url = request.headers.get("tgt_url")
-        if tgt_url : 
-            tgt_url = tgt_url.strip()
+        tgt_url = request.headers.get("tgt_url").strip()
+    #    tgt_url = request.headers.get("tgt_url")
+    #    if tgt_url : 
+    #        tgt_url = tgt_url.strip()
         if "init_images" in data:
             response = requests.post(f"{tgt_url}sdapi/v1/img2img",json=data)
         else:
