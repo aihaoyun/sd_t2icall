@@ -24,7 +24,7 @@ def on_app_started(_: gr.Blocks, app: FastAPI) -> None:
 
     @app.post("/t2icall/api/generate")
     def t2icall(data:dict,request: Request):
-        tgt_url = request.headers.get("tgt_url").strip()
+        tgt_url = request.headers.get("Tgt_Url").strip()
     #    tgt_url = request.headers.get("tgt_url")
     #    if tgt_url : 
     #        tgt_url = tgt_url.strip()
@@ -38,9 +38,9 @@ def on_app_started(_: gr.Blocks, app: FastAPI) -> None:
     @app.get("/t2icall/api/easyGetOptions")
     def getUpscaler(request: Request):
    #     tgt_url = request.headers.get("tgt_url").strip()
-        tgt_url = request.headers.get("tgt_url")
+        tgt_url = request.headers.get("Tgt_Url")
         if tgt_url is not None:
-            tgt_url = tgt_url.strip()
+            tgt_url = Tgt_Url.strip()
         response = requests.get(tgt_url)
         if response.status_code == 200 and tgt_url.endswith("upscalers"):
             return ",".join([upscaler["name"] for upscaler in response.json() if upscaler["name"] !="None"])
