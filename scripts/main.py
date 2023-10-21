@@ -37,14 +37,20 @@ def on_app_started(_: gr.Blocks, app: FastAPI) -> None:
         raise ConnectionError
     @app.get("/t2icall/api/easyGetOptions")
     def getUpscaler(request: Request):
-   #     tgt_url = request.headers.get("tgt_url").strip()
-        tgt_url = request.headers.get("Tgt_Url")
-        if tgt_url is not None:
-            tgt_url = Tgt_Url.strip()
+        tgt_url = request.headers.get("tgt_url").strip()
+  #      tgt_url = request.headers.get("Tgt_Url")
+   #     if tgt_url is not None:
+ #           tgt_url = Tgt_Url.strip()
         response = requests.get(tgt_url)
         if response.status_code == 200 and tgt_url.endswith("upscalers"):
             return ",".join([upscaler["name"] for upscaler in response.json() if upscaler["name"] !="None"])
         elif response.status_code == 200 and tgt_url.endswith("sd-vae"):
             return ",".join(["default"] + [model["model_name"] for model in response.json() if model] + ["None","Automatic"])
+            
+    @app.get("/t2icall/api/getForwarding")
+    def getForwarding(request: Request):
+        tgt_url = request.headers.get("Tgt-Url").strip()
+        response = requests.get(tgt_url)
+        return response.json()     
 script_callbacks.on_ui_tabs(on_ui_tabs)
 script_callbacks.on_app_started(on_app_started)
