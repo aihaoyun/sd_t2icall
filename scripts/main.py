@@ -24,8 +24,8 @@ def on_app_started(_: gr.Blocks, app: FastAPI) -> None:
 
     @app.post("/t2icall/api/generate")
     def t2icall(data:dict,request: Request):
-        tgt_url = request.headers.get("Tgt_Url").strip()
-    #    tgt_url = request.headers.get("tgt_url")
+        tgt_url = request.headers.get("Tgt-Url").strip()
+    #    tgt_url = request.headers.get("Tgt_Url")
     #    if tgt_url : 
     #        tgt_url = tgt_url.strip()
         if "init_images" in data:
@@ -37,7 +37,7 @@ def on_app_started(_: gr.Blocks, app: FastAPI) -> None:
         raise ConnectionError
     @app.get("/t2icall/api/easyGetOptions")
     def getUpscaler(request: Request):
-        tgt_url = request.headers.get("tgt_url").strip()
+        tgt_url = request.headers.get("Tgt-Url").strip()
   #      tgt_url = request.headers.get("Tgt_Url")
    #     if tgt_url is not None:
  #           tgt_url = Tgt_Url.strip()
