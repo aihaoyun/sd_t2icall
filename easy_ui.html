@@ -24,36 +24,36 @@
         }
 
         #generate_button {
-            padding: 15px 42px;
+            padding: 15px 32px;
             background-color: blueviolet;
             border-radius: 8px;
             display: inline-block;
             cursor: pointer;
             background-image: linear-gradient(to right, rgba(255, 0, 0, 0), rgba(255, 0, 0, 1));
-   
         }
+
         #progress {
             background-image: linear-gradient(to right, rgba(255, 0, 0, 0), rgba(255, 0, 0, 1));
         }
     </style>
     <div style="display: flex;">
         <span style="width: 14%;">后端requests请求URL:</span><input type="text" value="http://127.0.0.1:7860/"
-            style="width: 86%;" id="Tgt_Url" />
+            style="width: 86%;" id="Tgt-Url" />
     </div>
     <div id="txt2img" style="margin-bottom: 20px; margin-top: 20px;">
         <textarea style="width: 100%;" rows="8" placeholder="正面prompt" id="p_prompt"
             class="textarea_c">masterpiece, best quality, </textarea>
         <textarea style="width: 100%;" rows="8" placeholder="负面prompt" id="n_prompt"
             class="textarea_c">EasyNegative, </textarea>
-   <div> <span>宽 度: </span><input type="number" min="8" value="512" placeholder="width" id="width"></div>
-   <div><span>高  度: </span><input type="number" min="8" value="768" placeholder="height" id="height"></div>
-   <div><span>相关性: </span><input type="number" min="1" value="8" placeholder="提示词相关性(cfg_scale)" id="cfg_scale"></div>
-   <div><span>步  数: </span><input type="number" min="1" value="50" placeholder="steps" id="steps"></div>
-   <div><span>种  子: </span><input type="number" value="-1" min="-1" placeholder="seed" id="seed" /></div>
+        <div><span>宽度: </span><input type="number" min="8" value="640" placeholder="width" id="width"></div>
+        <div><span>高度: </span><input type="number" min="8" value="1024" placeholder="height" id="height"></div>
+        <div><span>相关: </span><input type="number" min="1" value="8" placeholder="提示词相关性(cfg_scale)" id="cfg_scale"></div>
+        <div><span>步数: </span><input type="number" min="1" value="50" placeholder="steps" id="steps"></div>
+        <div><span>种子: </span><input type="number" value="-1" min="-1" placeholder="seed" id="seed" /></div>
     </div>
     <div style="margin-bottom: 20px;">
         <input type="file" style="display:none;" id="selectPic" accept="image/*" />
-        <span style="margin-right: 12px;">采样 方法: <select id="sampler_index">
+        <span style="margin-right: 12px;">采样方法: <select id="sampler_index">
                 <option>Euler</option>
                 <option>Euler a</option>
                 <option>DPM++ 2M</option>
@@ -69,40 +69,28 @@
                 <option>DPM++ 3M SDE Exponential</option>
                 <option>DPM++ SDE Karras</option>
                 <option>Restart</option>
-            </select></span></div>
-<!-- <div><span onclick="RefreshVAE()" style="cursor: pointer;">VAE:</span><select id="VAE"> </select></div> -->
- <div style="margin-bottom: 20px;">
-        <span style="margin-right: 12px;">加载VAE:  <select id="VAE">
-                <option>kl-f8-anime2.ckpt</option>
-                <option selected>vae-ft-mse-840000-ema-pruned.ckpt</option>
-                
-           </select></span></div>
-
- <button onclick="selectPic()">选择放大的图</button>
+            </select></span>
+        <div><span onclick="RefreshVAE()" style="cursor: pointer;">VAE: </span><select id="VAE"></select></div>
+        <button onclick="selectPic()">选图</button><br>
         <button onclick="cancelImg()" style="display:none;" id="cancelImg_button">取消</button>
     </div>
     <div>
         <button onclick="hr_pic()" id="hr_button" style="margin-right: 20px;">高清修复(关)</button>
-  <div>      <span>放大倍数: </span><input type="number" min="1" step="0.1" value="2" id="magnification" /></div>
-  <div>      <span>重回幅度: </span> <input type="number" min="0.01" step="0.01" value="0.6" id="denoising_strength" /></div>
-<div>  <!--     <span>放大算法:  <select id="hr_upscaler"> </select></span></div>-->
-</div> 
-
-<div style="margin-bottom: 20px;">
-        <span style="margin-right: 12px;">放大算法:  <select id="hr_upscaler">
-                <option>4x-UltraSharp</option>
-                <option selected>R-ESRGAN 4x+</option>
-                
-           </select></span></div>
-<br>
+        <span>放大倍数: </span><input type="number" min="1" step="0.1" value="2" id="magnification" />
+        <span>重回幅度: </span> <input type="number" min="0.01" step="0.01" value="0.6" id="denoising_strength" />
+        <span>放大算法: <select id="hr_upscaler"></select></span>
+    </div>
+    <br>
     <div style="position:relative;top:10px;text-align: center;">
         <button onclick="generate()" id="generate_button">生成</button>
     </div>
-    <div class="progressContainer" style="width: 30%;background-color: lightblue;margin: 6px auto;display: none;"
+    <div class="progressContainer" style="width: 40%;height:8px;background-color: lightblue;margin: 8px auto;display: none;"
         id="progressContainer">
         <div class="progress" id="progress" style="height:100%;width:0%;text-align: center;background-color: pink;">
         </div>
     </div>
+    
+    <br>
     <div class="imgBox" id="show_img"></div>
 
     <script>
@@ -135,7 +123,6 @@
     </script>
 
     <script>
-       
         const generate_button = document.getElementById("generate_button");
         let count = 0;
         let task_count = 0;
@@ -184,7 +171,7 @@
         }
 
         function RefreshVAE() {
- //      easyGetOptions("sdapi/v1/sd-vae", "VAE");      
+            easyGetOptions("sdapi/v1/sd-vae", "VAE");
         }
 
         function getWH(base64) {
@@ -223,13 +210,13 @@
                 }
             }
         }
-     
-    //   easyGetOptions("sdapi/v1/upscalers", "hr_upscaler");
-     //  easyGetOptions("sdapi/v1/sd-vae", "VAE");
-         function easyGetOptions(tSrc, select_id) {
+
+        easyGetOptions("sdapi/v1/upscalers", "hr_upscaler");
+        easyGetOptions("sdapi/v1/sd-vae", "VAE");
+        function easyGetOptions(tSrc, select_id) {
             const xhr = new XMLHttpRequest();
             xhr.open("get", "/t2icall/api/easyGetOptions", true)
-            xhr.setRequestHeader("Tgt_Url", document.getElementById("Tgt_Url").value + tSrc);
+            xhr.setRequestHeader("Tgt-Url", document.getElementById("Tgt-Url").value + tSrc);
             xhr.onload = function () {
                 const select = document.getElementById(select_id);
                 select.innerHTML = "";
@@ -285,7 +272,7 @@
                 "sampler_index": sampler_index,
                 "restore_faces": "True"
             };
-            if (sd_vae !== "default"){
+            if (sd_vae !== "default") {
                 param["override_settings"] = {
                     "sd_vae": sd_vae,
                 }
@@ -304,31 +291,32 @@
             const url = '/t2icall/api/generate';
             xhr.open("post", url, true);
             xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-            xhr.setRequestHeader("Tgt_Url", document.getElementById("Tgt_Url").value);
+            xhr.setRequestHeader("Tgt-Url", document.getElementById("Tgt-Url").value);
             xhr.onload = function () {
                 clearInterval(Interval);
-                 task_count--;
-                 if (task_count === 0) {
-                     progressContainer.style.display = "none";
-                 }
-                 progress.style.width = "0%";
-                 progress.innerHTML = '';
-                 if (this.status == 200) {
-               //     const img = document.createElement("img");
-               //     img.style.maxWidth = "300px";
-               //     img.src = "data:image/png;base64," + this.responseText.replaceAll('"', '');
-                //    img.addEventListener("click", downloadImage);
-               //     show_img_div.insertBefore(img, show_img_div.firstChild);
+                task_count--;
+                if (task_count === 0) {
+                    progressContainer.style.display = "none";
+                }
+                progress.style.width = "0%";
+                progress.innerHTML = '';
+                if (this.status == 200) {
+                    // const img = document.createElement("img");
+                    // img.style.maxWidth = "300px";
+                    // img.src = "data:image/png;base64," + this.responseText.replaceAll('"', '');
+                    // img.addEventListener("click", downloadImage);
+                    // show_img_div.insertBefore(img, show_img_div.firstChild);
                     show_img_div.firstChild.src = "data:image/png;base64," + this.responseText.replaceAll('"', '');
                     show_img_div.firstChild.style.maxWidth = "300px";
                     show_img_div.style.removeProperty("width");
-                    creat_img = false;                   
+                    creat_img = false;
                 } else {
                     alert("error: " + this.responseText)
                 }
                 if (autoRun) {
                     generate_button.click();
                 }
+
             }
             xhr.send(JSON.stringify(param));
             progressContainer.style.display = "block";
@@ -349,7 +337,7 @@
         height: 100%;
         display: none;
       ">
-        <img id="bigimg" src="" ondblclick="bigimgclick()"/>
+        <img id="bigimg" src="" ondblclick="bigimgclick()" />
     </div>
 </body>
 <script>
