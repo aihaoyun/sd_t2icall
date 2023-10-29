@@ -159,9 +159,11 @@
                 }
                 else if (count === 2) {
                     const img = event.target;
+                    const customName = 'k4_' + Date.now();
                     const a = document.createElement("a");
                     a.href = img.src;
-                    a.download = Date.now() + ".png";
+                    a.download = customName + ".png";
+                    // a.download = Date.now() + ".png";
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
